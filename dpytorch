@@ -1,0 +1,50 @@
+#!/bin/bash
+
+image=$(basename $0)-docker
+
+docker build -t $image - <<EOF
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
+ENV LC_ALL=C
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -qqy update
+RUN apt-get install -qqy git curl dtrx buffer mbuffer pv daemon expect mercurial
+RUN apt-get install -qqy python3-scipy python3-matplotlib python3-pip python3-h5py graphviz
+RUN apt-get install -qqy python-skimage python-sklearn python-pil python-imageio
+RUN apt-get install -qqy nodejs npm
+RUN pip3 install --no-cache-dir --upgrade virtualenv
+RUN pip3 install --no-cache-dir --upgrade six future msgpack pyzmq simplejson braceexpand
+RUN pip3 install --no-cache-dir --upgrade natsort
+RUN pip3 install --no-cache-dir --upgrade ipython
+RUN pip3 install --no-cache-dir --upgrade jupyter 
+RUN pip3 install --no-cache-dir --upgrade bash_kernel sos sos-notebook sos-python sos-bash
+RUN pip3 install --no-cache-dir --upgrade pydot
+RUN pip3 install git+git://github.com/jupyterlab/jupyterlab.git#egg=jupyterlab
+RUN python3 -m bash_kernel.install
+RUN python3 -m sos_notebook.install
+RUN jupyter labextension install transient-display-data
+RUN jupyter labextension install jupyterlab-sos
+RUN pip3 install torch -f https://download.pytorch.org/whl/cu100/stable
+RUN pip3 install torchvision
+RUN pip3 install --no-cache-dir --upgrade git+git://github.com/NVlabs/webloader
+RUN pip3 install --no-cache-dir --upgrade git+git://github.com/NVlabs/torchtrainers
+RUN pip3 install --no-cache-dir --upgrade git+git://github.com/NVlabs/tensorcom
+RUN pip3 install --no-cache-dir --upgrade git+git://github.com/tmbdev/torchmore
+#RUN cd /tmp && git clone https://github.com/NVIDIA/apex && cd apex && pip3 install -v --no-cache-dir --global-option="--cpp-ext" --global-option="--cuda_ext" ./ && rm -rf /tmp/apex
+EOF
+
+here=$(/bin/pwd)
+
+docker run \
+    --network host \
+    --rm \
+    -v /etc/passwd:/etc/passwd \
+    -v /etc/group:/etc/group \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v $HOME:$HOME \
+    -v $here:$here \
+    -w $here\
+    -e DISPLAY=$DISPLAY \
+    -u $(id -u):$(id -g) \
+    -i \
+    -t "$image" \
+    "$@"

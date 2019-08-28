@@ -1,0 +1,11 @@
+#!/bin/bash
+
+docker build -t myjupyter - < myjupyter.dock
+
+# adjust this to your needs
+work=$HOME
+mkdir -p $work
+
+docker run -p 8988:8988 \
+    -v $work:/work \
+    -t -i myjupyter
